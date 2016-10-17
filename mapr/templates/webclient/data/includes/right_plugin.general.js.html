@@ -48,17 +48,21 @@
  * It loads appropriate data into the right-hand 'general' tab on selection changes in the jsTree.
 **/
 
-var urlRegex = /(https?|ftp|file):\/\/[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]/g;
+var urlRegex = /(https?|ftp|file):\/\/[!-~]*/g;
 
 var iconify = function(input, imgsrc) {
     if (typeof imgsrc === 'undefined') {
-        imgsrc = "http://www.google.com/s2/favicons?domain=$&";
+        imgsrc = 'http://www.google.com/s2/favicons?domain=';
+        //imgsrc = "{% url "mapannotations_favicon" %}?u=";
     }
-    return input.replace(urlRegex, " <span class='favicon'><a href='$&' target='_blank' ><img src='" + imgsrc + "' /></a></span>");
+    function replacer(match){
+        return ' <span class="favicon"><a href="' + match + '" target="_blank" ><img src="' + imgsrc + encodeURIComponent(match) + '" /></a></span>';
+    };
+    return input.replace(new RegExp(urlRegex, "gim"), replacer);
 };
 
 var isURL = function(input) {
-    var regex = new RegExp(urlRegex);
+    var regex = new RegExp(urlRegex, "gim");
     return regex.test(input);
 };
 
@@ -119,7 +123,7 @@ OME.linkify_element = function(elements) {
                         var $chl = $(this).children("td:nth-child(1)");
                         var $chv = $(this).children("td:nth-child(2)");
                         var $chs = $row.children("td:nth-child(2)").find("span a img").attr('src');
-                        return $chl.text() === _tkey && (($chv.find("a").text().lenght > 0 && $chs.indexOf($chv.find("a").text()) >= 0) || ($chv.text().length > 0 && $chs.indexOf($chv.text()) >= 0));
+                        return $chl.text() === _tkey && (($chv.find("a").text().lenght > 0 && ($chs.indexOf(encodeURIComponent($chv.find("a").text())) >= 0 || $chs.indexOf($chv.find("a").text()) >= 0)) || ($chv.text().length > 0 && ($chs.indexOf(encodeURIComponent($chv.text())) >= 0 || $chs.indexOf($chv.text()) >= 0)));
                     }).closest("tr");
                     if ( $target.length ) {
                         var $targetchlabel = $target.children("td:nth-child(1)");
@@ -213,7 +217,7 @@ $(function () {
                     //$metadata_general.html('<p>'+selected.children().eq(1).text()+'</p>');
                 } else if (orel.indexOf("map")>=0) {
                     var map_prefix = '{% url "maprindex" %}';
-                    url = map_prefix+'metadata_details/{{ menu }}/'+oid.split(/-(.+)/)[1]+'/';
+                    url = map_prefix+'metadata_details/{{ menu }}/'+encodeURIComponent(oid.split(/-(.+)/)[1])+'/';
                 // everything else
                 } else {
                     if(orel=="image") {

@@ -35,7 +35,7 @@ reverse_lazy = lazy(reverse, str)
 # concatenate aliases to use in url regex
 MENU_MAPR_REGEX = "(%s)" % ("|".join(mapr_settings.MENU_MAPR))
 DEFAULT_MENU = mapr_settings.MENU_MAPR.iterkeys().next()
-VALUE_MAPR_REGEX = "[:\.\,\-\w\s]+"
+VALUE_MAPR_REGEX = "[ -~]+"
 
 urlpatterns = patterns('',)
 
@@ -95,5 +95,10 @@ urlpatterns += (
     url(r'^autocomplete/(?P<menu>%s)/$' % MENU_MAPR_REGEX,
         views.mapannotations_autocomplete,
         name='mapannotations_autocomplete'),
+
+    # favicon
+    url(r'^favicon/$',
+        views.mapannotations_favicon,
+        name='mapannotations_favicon'),
 
 )

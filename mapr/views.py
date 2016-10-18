@@ -22,6 +22,10 @@
 
 
 import logging
+import traceback
+import requests
+import cStringIO
+from urlparse import urlparse
 
 from Ice import Exception as IceException
 from omero import ApiUsageException, ServerError
@@ -32,6 +36,10 @@ from mapr_settings import mapr_settings
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseServerError, HttpResponseBadRequest
 from django.http import JsonResponse
+from django.http import Http404
+
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
 
 from show import mapr_paths_to_object
 from show import MapShow as Show
@@ -46,10 +54,24 @@ from omeroweb.webclient.views import _load_template as _webclient_load_template
 from omeroweb.webclient.views import api_paths_to_object \
     as webclient_api_paths_to_object
 
+from omeroweb.http import HttpJPEGResponse
+
 import omeroweb
 
 
 logger = logging.getLogger(__name__)
+
+
+try:
+    from PIL import Image  # see ticket:2597
+except ImportError:
+    try:
+        import Image  # see ticket:2597
+    except:
+        logger.error(
+            "You need to install the Python Imaging Library. Get it at"
+            " http://www.pythonware.com/products/pil/")
+        logger.error(traceback.format_exc())
 
 
 # Helpers
@@ -524,3 +546,29 @@ def mapannotations_autocomplete(request, menu, conn=None, **kwargs):
         return HttpResponseServerError(e.message)
 
     return JsonResponse(list(autocomplete), safe=False)
+
+
+@login_required()
+def mapannotations_favicon(request, conn=None, **kwargs):
+
+    favdomain = "{0.scheme}://{0.netloc}/".format(
+        urlparse(request.GET.get('u', None)))
+    if favdomain is not None:
+        validate = URLValidator()
+        try:
+            validate(favdomain)
+            r = requests.get(
+                "%s%s" % (mapr_settings.FAVICON_WEBSERVICE, favdomain),
+                stream=True)
+            if r.status_code == 200:
+                return HttpJPEGResponse(r.content)
+        except ValidationError:
+            return HttpResponseBadRequest('Invalid url')
+
+    with Image.open(mapr_settings.DEFAULT_FAVICON) as img:
+        img.thumbnail((16, 16), Image.ANTIALIAS)
+        f = cStringIO.StringIO()
+        img.save(f, "PNG")
+        f.seek(0)
+        return HttpJPEGResponse(f.read())
+    raise Http404

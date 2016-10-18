@@ -2,6 +2,7 @@ import django
 from django.conf import settings
 from omeroweb.settings import process_custom_settings, report_settings
 import sys
+import os
 import json
 
 
@@ -60,6 +61,7 @@ default_config = [
             "label": ["siRNA supplementary"]
         }
     },
+
     {
         "menu": "phenotype",
         "config": {
@@ -111,6 +113,9 @@ default_config = [
 MAPR_SETTINGS_MAPPING = {
     "omeroweb.mapr.config":
         ["MAPR_CONFIG", json.dumps(default_config), json.loads, None],
+    "omeroweb.mapr.favicon_webservice":
+        ["FAVICON_WEBSERVICE",
+            "http://www.google.com/s2/favicons?domain=", str, None]
     }
 
 process_custom_settings(sys.modules[__name__], 'MAPR_SETTINGS_MAPPING')
@@ -119,9 +124,18 @@ report_settings(sys.modules[__name__])
 
 MAPR_CONFIG_AS_DICT = config_list_to_dict(MAPR_CONFIG)  # noqa
 
+DEFAULT_FAVICON = os.path.join(
+    os.path.dirname(__file__), 'static', 'mapr', 'image',
+    'favicon.png').replace('\\', '/')
+
 
 class MaprSettings(object):
 
-    MENU_MAPR = getattr(settings, 'MAPR_CONFIG_AS_DICT', MAPR_CONFIG_AS_DICT)
+    MENU_MAPR = getattr(
+        settings, 'MAPR_CONFIG_AS_DICT', MAPR_CONFIG_AS_DICT)
+    DEFAULT_FAVICON = getattr(
+        settings, 'DEFAULT_FAVICON', DEFAULT_FAVICON)
+    FAVICON_WEBSERVICE = getattr(
+        settings, 'FAVICON_WEBSERVICE', FAVICON_WEBSERVICE)  # noqa
 
 mapr_settings = MaprSettings()

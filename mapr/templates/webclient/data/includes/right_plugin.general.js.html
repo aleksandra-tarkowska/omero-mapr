@@ -52,8 +52,8 @@ var urlRegex = /(https?|ftp|file):\/\/[!-~]*/g;
 
 var iconify = function(input, imgsrc) {
     if (typeof imgsrc === 'undefined') {
-        imgsrc = 'http://www.google.com/s2/favicons?domain=';
-        //imgsrc = "{% url "mapannotations_favicon" %}?u=";
+        //imgsrc = 'http://www.google.com/s2/favicons?domain=';
+        imgsrc = "{% url "mapannotations_favicon" %}?u=";
     }
     function replacer(match){
         return ' <span class="favicon"><a href="' + match + '" target="_blank" ><img src="' + imgsrc + encodeURIComponent(match) + '" /></a></span>';

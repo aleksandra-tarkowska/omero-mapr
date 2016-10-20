@@ -56,7 +56,7 @@ var iconify = function(input, imgsrc) {
         imgsrc = "{% url "mapannotations_favicon" %}?u=";
     }
     function replacer(match){
-        return ' <span class="favicon"><a href="' + match + '" target="_blank" ><img src="' + imgsrc + encodeURIComponent(match) + '" /></a></span>';
+        return ' <span class="favicon"><a href="' + match + '" target="_blank" ><img src="' + imgsrc + encodeURIComponent(decodeURIComponent(match)) + '" /></a></span>';
     };
     return input.replace(new RegExp(urlRegex, "gim"), replacer);
 };
@@ -111,7 +111,7 @@ OME.linkify_element = function(elements) {
                 if ( $.inArray(_key, menu2keys) > -1 ) {
                     if ( _key in keys2menu && keys2menu[_key] !== undefined ) {
                         // create mapr url
-                        var _url = location.protocol + "//" + location.host + "{% url 'maprindex' %}" + keys2menu[_key] +"/" + encodeURIComponent(_val) + "/";
+                        var _url = location.protocol + "//" + location.host + "{% url 'maprindex' %}" + keys2menu[_key] +"/?value=" + encodeURIComponent(_val);
                         $chvalue.html($chvalue.html().replace(_val, "<a href='" + _url + "'>" + _val + "</a>"));
                     }
                 }
@@ -200,12 +200,13 @@ $(function () {
         } else {
             $("#annotation_tabs").tabs("enable", general_tab_index);    // always want metadata_general enabled
             var url = null;
+            var data = {};
             //var oid = selected.attr('id');
             //var orel = selected[0].attr('rel');
             var oid = selected[0]["id"];
             var orel = oid.split("-")[0];
             if (typeof oid =="undefined" || oid==false) return;
-            
+
             // handle loading of GENERAL tab
             if ($metadata_general.is(":visible") && $metadata_general.is(":empty")) {
                 // orphaned
@@ -217,7 +218,8 @@ $(function () {
                     //$metadata_general.html('<p>'+selected.children().eq(1).text()+'</p>');
                 } else if (orel.indexOf("map")>=0) {
                     var map_prefix = '{% url "maprindex" %}';
-                    url = map_prefix+'metadata_details/{{ menu }}/'+encodeURIComponent(oid.split(/-(.+)/)[1])+'/';
+                    url = map_prefix+'metadata_details/{{ menu }}/';
+                    data = {'value': oid.split(/-(.+)/)[1]};
                 // everything else
                 } else {
                     if(orel=="image") {
@@ -228,7 +230,8 @@ $(function () {
                         }
                     } else if(orel=="well"){
                         var well_index = selected[0]["index"];
-                        url = '{% url "load_metadata_details" %}well/'+oid.split('-')[1]+'/?index='+ well_index;
+                        url = '{% url "load_metadata_details" %}well/'+oid.split('-')[1]+'/';
+                        data = {'index': well_index};
                     } else {
                         url = prefix+'metadata_details/'+orel+'/'+oid.split("-")[1]+'/';
                     }
@@ -238,6 +241,7 @@ $(function () {
                     // is still correct (hasn't changed during the AJAX call);
                     $.ajax({
                         url: url,
+                        data: $.param(data),
                         dataType: "html",
                         success: function(data) {
                             var selected_id = $("body").data("selected_objects.ome")[0].id;

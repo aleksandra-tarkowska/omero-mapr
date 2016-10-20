@@ -34,41 +34,8 @@
     
     {{ block.super }}
 
-    <script type="text/javascript">
-
-        WEBCLIENT.UI.TREE.pagination_nodes = ["screen", "acquisition", "project", "tagset",  "image", "map", "experimenter"];
-
-        {% if map_value %}
-            WEBCLIENT.URLS.api_experimenter = "{% url 'mapannotations_api_experimenters' menu map_value %}";
-        {% else %}
-            WEBCLIENT.URLS.api_experimenter = "{% url 'mapannotations_api_experimenters' menu %}";
-        {% endif %}
-
-        WEBCLIENT.URLS.tree_top_level = "{% url 'mapannotations_api_mapannotations' menu %}";
-        WEBCLIENT.URLS.tree_map_level = WEBCLIENT.URLS.tree_top_level;
-
-        WEBCLIENT.URLS.api_tags_and_tagged = WEBCLIENT.URLS.tree_top_level;
-
-        WEBCLIENT.URLS.api_datasets = "{% url 'mapannotations_api_datasets' menu %}";
-        WEBCLIENT.URLS.api_images = "{% url 'mapannotations_api_images' menu %}";
-        WEBCLIENT.URLS.api_plates = "{% url 'mapannotations_api_plates' menu %}";
-        WEBCLIENT.URLS.api_plate_acquisitions = WEBCLIENT.URLS.api_images;
-
-        WEBCLIENT.URLS.api_paths_to_object = "{% url 'mapannotations_api_paths_to_object' menu %}";
-
-        var MAPANNOTATIONS = {}
-        MAPANNOTATIONS.URLS = {'static_webclient': "{% static 'mapr' %}/"};
-        MAPANNOTATIONS.URLS.autocomplete = "{% url 'mapannotations_autocomplete' menu %}";
-        MAPANNOTATIONS.URLS.autocomplete_default = "{% url 'mapannotations_api_experimenters' menu %}";
-
-        MAPANNOTATIONS.MENU = {'label': "{{ menu }}"};
-        MAPANNOTATIONS.VALUE = "{{ map_value }}";
-
-    </script>
-
-    <script src="{% static 'mapr/javascript/ome.mapr.js'|add:url_suffix %}" type="text/javascript"></script>
     <script src="{% static 'mapr/javascript/ome.mapr.ui.autocomplete.js'|add:url_suffix %}" type="text/javascript"></script>
-
+    <script src="{% static 'mapr/javascript/ome.mapr.js'|add:url_suffix %}" type="text/javascript"></script>
     <!-- include code to handle primary 'thumbs' middle plugin -->
     <script src="{% static 'mapr/javascript/center_plugin.thumbs.js'|add:url_suffix %}" type="text/javascript"></script>
 
@@ -109,4 +76,40 @@
         </div>
 
     </div>
+    
+    <script type="text/javascript">
+
+        WEBCLIENT.UI.TREE.pagination_nodes = ["screen", "acquisition", "project", "tagset",  "image", "map", "experimenter"];
+
+        WEBCLIENT.URLS.api_experimenter = "{% url 'mapannotations_api_experimenters' menu %}";
+
+        WEBCLIENT.URLS.tree_top_level = "{% url 'mapannotations_api_mapannotations' menu %}";
+        WEBCLIENT.URLS.tree_map_level = WEBCLIENT.URLS.tree_top_level;
+
+        WEBCLIENT.URLS.api_tags_and_tagged = WEBCLIENT.URLS.tree_top_level;
+
+        WEBCLIENT.URLS.api_datasets = "{% url 'mapannotations_api_datasets' menu %}";
+        WEBCLIENT.URLS.api_images = "{% url 'mapannotations_api_images' menu %}";
+        WEBCLIENT.URLS.api_plates = "{% url 'mapannotations_api_plates' menu %}";
+        WEBCLIENT.URLS.api_plate_acquisitions = WEBCLIENT.URLS.api_images;
+
+        WEBCLIENT.URLS.api_paths_to_object = "{% url 'mapannotations_api_paths_to_object' menu %}";
+
+        var MAPANNOTATIONS = {}
+        MAPANNOTATIONS.URLS = {'static_webclient': "{% static 'mapr' %}/"};
+        MAPANNOTATIONS.URLS.autocomplete = "{% url 'mapannotations_autocomplete' menu %}";
+        MAPANNOTATIONS.URLS.autocomplete_default = "{% url 'mapannotations_api_experimenters' menu %}";
+
+        MAPANNOTATIONS.CTX = {'label': "{{ menu }}", 'value': "{{ map_value }}", 'query': "{{ map_query }}"};
+
+        payload = {};
+        if (MAPANNOTATIONS.CTX.value.length > 0) {
+            payload['value'] = MAPANNOTATIONS.CTX.value;
+        }
+        if (MAPANNOTATIONS.CTX.query.length > 0) {
+            payload['query'] = MAPANNOTATIONS.CTX.query;
+        }
+        $("#dataTree").data('payload', payload);
+
+    </script>
 {% endblock %}

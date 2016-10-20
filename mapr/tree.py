@@ -134,10 +134,6 @@ def count_mapannotations(conn, mapann_ns=[], mapann_names=[],
         or -1 for all experimenters
         @type experimenter_id L{long}
     '''
-    # map value is always one
-    if mapann_value:
-        return 1
-
     params, where_clause = _set_parameters(
         mapann_ns=mapann_ns, mapann_names=mapann_names,
         mapann_query=mapann_query, mapann_value=mapann_value,

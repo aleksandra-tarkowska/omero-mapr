@@ -25,9 +25,37 @@
 
 $(function () {
 
-    var jstreeInst = $.jstree.reference('#dataTree');
+    var jstree = $.jstree.reference('#dataTree');
 
-    jstreeInst.settings.sort = function(nodeId1, nodeId2) {
+    // payload
+    var oldData = jstree.settings.core.data;
+    jstree.settings.core.data = function(node, callback, payload) {
+        if (payload === undefined) {
+            payload = {};
+        }
+        if (MAPANNOTATIONS.CTX.value.length > 0) {
+            payload['value'] = MAPANNOTATIONS.CTX.value;
+        }
+        if (MAPANNOTATIONS.CTX.query.length > 0) {
+            payload['query'] = MAPANNOTATIONS.CTX.query;
+        }
+        oldData.apply(jstree, [node, callback, payload]);
+    }
+
+    // custom type map
+    jstree.settings.types['#'].valid_children = ['map'];
+    jstree.settings.types['map'] = {
+        'icon': WEBCLIENT.URLS.static_webclient + 'image/left_sidebar_icon_tag.png',
+        'valid_children': ['project', 'screen'],
+        'draggable': false
+    }
+
+    if (MAPANNOTATIONS.CTX.label.length > 0) {
+        jstree.settings.types['map'].icon = MAPANNOTATIONS.URLS.static_webclient + 'image/' + MAPANNOTATIONS.CTX.label + '_icon_16x16.png';
+    }
+    jstree.settings.types['plate'].valid_children = ['image'];
+
+    jstree.settings.sort = function(nodeId1, nodeId2) {
         var inst = this;
         var node1 = inst.get_node(nodeId1);
         var node2 = inst.get_node(nodeId2);
@@ -70,10 +98,5 @@ $(function () {
 
         return sortingStrategy(node1, node2);
     };
-
-    jstreeInst.settings.types['experimenter'].valid_children = ['map'];
-    jstreeInst.settings.types['map'].icon = MAPANNOTATIONS.URLS.static_webclient + 'image/' + MAPANNOTATIONS.MENU.label + '_icon_16x16.png';
-    jstreeInst.settings.types['plate'].valid_children = ['image'];
-
 
 });

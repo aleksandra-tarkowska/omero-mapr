@@ -35,14 +35,13 @@ reverse_lazy = lazy(reverse, str)
 # concatenate aliases to use in url regex
 MENU_MAPR_REGEX = "(%s)" % ("|".join(mapr_settings.MENU_MAPR))
 DEFAULT_MENU = mapr_settings.MENU_MAPR.iterkeys().next()
-VALUE_MAPR_REGEX = "[ -~]+"
 
 urlpatterns = patterns('',)
 
 # alias
 for m in mapr_settings.MENU_MAPR:
     urlpatterns += (
-        url(r'^(?i)%s/(?:(?P<value>%s)/)?$' % (m, VALUE_MAPR_REGEX),
+        url(r'^(?i)%s/$' % m,
             views.index, {'menu': m},
             name="maprindex_%s" % m),
         )
@@ -57,8 +56,7 @@ urlpatterns += (
             query_string=True)),
         name="maprindex"),
 
-    url(r'^api/(?P<menu>%s)/(?:(?P<value>%s)/)?'
-        r'count/$' % (MENU_MAPR_REGEX, VALUE_MAPR_REGEX),
+    url(r'^api/(?P<menu>%s)/count/$' % (MENU_MAPR_REGEX),
         views.api_experimenter_list,
         name='mapannotations_api_experimenters'),
     url(r'^api/(?P<menu>%s)/datasets/$' % MENU_MAPR_REGEX,
@@ -75,9 +73,7 @@ urlpatterns += (
         views.api_paths_to_object,
         name='mapannotations_api_paths_to_object'),
 
-    # TODO: c_id takes namedValue.name as an attribute, make sure regex match
-    url(r'^metadata_details/(?P<c_type>%s)/'
-        r'(?P<c_id>(.*))/$' % MENU_MAPR_REGEX,
+    url(r'^metadata_details/(?P<c_type>%s)/$' % MENU_MAPR_REGEX,
         views.load_metadata_details,
         name="mapannotations_load_metadata_details"),
 
@@ -86,8 +82,7 @@ urlpatterns += (
         name='mapannotations_api_annotations'),
 
     # must be last on the list
-    url(r'^api/(?P<menu>%s)/(?:(?P<value>%s)/)?$' %
-        (MENU_MAPR_REGEX, VALUE_MAPR_REGEX),
+    url(r'^api/(?P<menu>%s)/$' % MENU_MAPR_REGEX,
         views.api_mapannotation_list,
         name='mapannotations_api_mapannotations'),
 

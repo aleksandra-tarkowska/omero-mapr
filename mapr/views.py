@@ -134,7 +134,13 @@ def _get_keys(mapr_settings, menu):
 
 @login_required()
 @render_response()
-def index(request, menu, value=None, conn=None, url=None, **kwargs):
+def index(request, menu, conn=None, url=None, **kwargs):
+    try:
+        value = get_str_or_default(request, 'value', None)
+        query = get_str_or_default(request, 'query', None)
+    except ValueError:
+        logger.error(traceback.format_exc())
+        return HttpResponseBadRequest('Invalid parameter value')
     kwargs['show'] = Show(conn=conn, request=request, menu=menu, value=value)
     kwargs['load_template_url'] = reverse(viewname="maprindex_%s" % menu)
     kwargs['template'] = "mapr/base_mapr.html"
@@ -144,7 +150,8 @@ def index(request, menu, value=None, conn=None, url=None, **kwargs):
     context['menu_default'] = ", ".join(
         mapr_settings.MENU_MAPR[menu]['default'])
     context['menu_all'] = ", ".join(mapr_settings.MENU_MAPR[menu]['all'])
-    context['map_value'] = value
+    context['map_value'] = value or ""
+    context['map_query'] = query or ""
     context['template'] = "mapr/base_mapr.html"
 
     return context
@@ -199,8 +206,7 @@ omeroweb.webclient.views.api_paths_to_object = api_paths_to_object
 
 
 @login_required()
-def api_experimenter_list(request, menu,
-                          value=None, conn=None, **kwargs):
+def api_experimenter_list(request, menu, conn=None, **kwargs):
 
     mapann_ns = _get_ns(mapr_settings, menu)
     keys = _get_keys(mapr_settings, menu)
@@ -211,7 +217,7 @@ def api_experimenter_list(request, menu,
         # limit = get_long_or_default(request, 'limit', settings.PAGE)
         group_id = get_long_or_default(request, 'group', -1)
         experimenter_id = get_long_or_default(request, 'experimenter', -1)
-        mapann_value = value or get_str_or_default(request, 'value', None) \
+        mapann_value = get_str_or_default(request, 'value', None) \
             or get_str_or_default(request, 'id', None)
         mapann_names = get_list_or_default(request, 'name', keys)
         mapann_query = get_str_or_default(request, 'query', None)
@@ -459,7 +465,7 @@ def api_image_list(request, menu, conn=None, **kwargs):
 
 @login_required()
 @render_response()
-def load_metadata_details(request, c_type, c_id, conn=None, share_id=None,
+def load_metadata_details(request, c_type, conn=None, share_id=None,
                           **kwargs):
     """
     This page is the right-hand panel 'general metadata', first tab only.
@@ -467,6 +473,12 @@ def load_metadata_details(request, c_type, c_id, conn=None, share_id=None,
     The data and annotations are loaded by the manager. Display of appropriate
     data is handled by the template.
     """
+
+    c_id = None
+    try:
+        c_id = get_str_or_default(request, 'value', None)
+    except ValueError:
+        return HttpResponseBadRequest('Invalid parameter value')
 
     template = "mapr/metadata_general.html"
 

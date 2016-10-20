@@ -67,7 +67,9 @@ def _set_parameters(mapann_ns=[], mapann_names=[],
 
     if mapann_query:
         # query starts from search terms
-        params.addString("query", rstring("%s%%" % str(mapann_query).lower()))
+        params.addString(
+            "query",
+            rstring("%%%s%%" % str(mapann_query).lower()))
         where_clause.append('lower(mv.value) like :query')
 
     if mapann_value:

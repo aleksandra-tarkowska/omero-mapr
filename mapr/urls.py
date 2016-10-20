@@ -35,7 +35,7 @@ reverse_lazy = lazy(reverse, str)
 # concatenate aliases to use in url regex
 MENU_MAPR_REGEX = "(%s)" % ("|".join(mapr_settings.MENU_MAPR))
 DEFAULT_MENU = mapr_settings.MENU_MAPR.iterkeys().next()
-VALUE_MAPR_REGEX = "[ -~]+"
+VALUE_MAPR_REGEX = "[\w\d\_\.]+"
 
 urlpatterns = patterns('',)
 

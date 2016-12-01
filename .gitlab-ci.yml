@@ -1,7 +1,17 @@
+image: docker:latest
+
 stages:
   - test
 
-test_job:
+variables:
+  OMEROBUILD: OMERO-DEV-merge-build
+
+test:
   stage: test
+  before_script:
+    - docker-compose -v
   script:
-    - ci/test
+    - docker-compose -f docker/docker-compose.yml up --build --abort-on-container-exit
+    - exitcode=$(docker inspect -f '{{.State.ExitCode}}' docker_maprtest_1)
+    - docker-compose -f docker/docker-compose.yml rm -fv
+    - exit $exitcode

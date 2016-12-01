@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e -u -x
+
+export OMEROBUILD=OMERO-DEV-merge-build
+
+docker-compose -f docker/docker-compose.yml up --build --abort-on-container-exit
+exitcode=$(docker inspect -f '{{.State.ExitCode}}' docker_maprtest_1)
+docker-compose -f docker/docker-compose.yml rm -fv
+exit $exitcode

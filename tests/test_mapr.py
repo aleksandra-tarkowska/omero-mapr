@@ -25,8 +25,8 @@
 
 import os
 
-from omero.model import ScreenI, PlateI, WellI, WellSampleI, ScreenPlateLinkI
-from omero.rtypes import rint, rstring, unwrap
+from omero.model import ScreenI
+from omero.rtypes import rstring, unwrap
 from omero.util.temp_files import create_path
 from omero.util.populate_metadata import BulkToMapAnnotationContext
 from omero.util.populate_metadata import ParsingContext
@@ -60,31 +60,27 @@ class IMaprTest(IWebTest):
             csv_file.close()
         return str(csv_file_name)
 
-    def create_plate(self, row_count, col_count):
-        plates = self.import_plates(plateRows=row_count,
-                                    plateCols=col_count)
-        return plates[0]
+    def set_name(self, obj, name):
+        q = self.client.sf.getQueryService()
+        up = self.client.sf.getUpdateService()
+        obj = q.get(obj.__class__.__name__, obj.id.val)
+        obj.setName(rstring(name))
+        return up.saveAndReturnObject(obj)
 
-    def create_plate1(self, row_count, col_count):
-        uuid = self.ctx.sessionUuid
-
-        def create_well(row, column):
-            well = WellI()
-            well.row = rint(row)
-            well.column = rint(column)
-            ws = WellSampleI()
-            image = self.new_image(name=uuid)
-            ws.image = image
-            well.addWellSample(ws)
-            return well
-
-        plate = PlateI()
-        plate.name = rstring("TestPopulateMetadata%s" % uuid)
-        for row in range(row_count):
-            for col in range(col_count):
-                well = create_well(row, col)
-                plate.addWell(well)
-        return self.client.sf.getUpdateService().saveAndReturnObject(plate)
+    def create_screen(self, row_count, col_count):
+        # TODO: remove 5.2 vs 5.3 compatibility
+        try:
+            plate = self.importPlates(plateRows=row_count,
+                                      plateCols=col_count)[0]
+        except AttributeError:
+            plate = self.import_plates(plateRows=row_count,
+                                       plateCols=col_count)[0]
+        plate = self.set_name(plate, "P001")
+        screen = ScreenI()
+        screen.name = rstring("test_screen_mapr")
+        screen.linkPlate(plate.proxy())
+        return (self.client.sf.getUpdateService().saveAndReturnObject(screen),
+                plate)
 
     def new_screen(self, name=None, description=None):
         """
@@ -120,36 +116,21 @@ class IMaprTest(IWebTest):
 
 class TestMapr(IMaprTest):
 
-    def setup_method(self):
-        super(IMaprTest, self).setup_class()
-        self.screen = self.make_screen("test_screen_mapr")
+    def setup_method(self, method):
         row_count = 1
         col_count = 2
-        self.plate = self.create_plate1(row_count, col_count)
-        plate_name = self.plate.name.val
+        self.screen, self.plate = self.create_screen(row_count, col_count)
 
-        link = ScreenPlateLinkI()
-        link.setParent(self.screen.proxy())
-        link.setChild(self.plate.proxy())
-        self.client.sf.getUpdateService().saveAndReturnObject(link)
+        self.csv = os.path.join(os.path.dirname(__file__),
+                                'bulk_to_map_annotation_context_ns.csv')
 
-        gene = {
-            'col_names':
-                "Plate,Well Number,Well,Gene Identifier,Gene Symbol,Organism",
-            'row_data': (
-                "%s,1,A1,CDC20,ENSG00000117399,Homo sapiens" % plate_name,
-                "%s,2,A2,CDC20,YGL116W,Mouse" % plate_name
-            )
-        }
-        self.csv_name = self.create_csv(gene['col_names'], gene['row_data'])
-
-        ctx = ParsingContext(self.client, self.screen.proxy(),
-                             file=self.csv_name)
+        ctx = ParsingContext(self.client, self.screen.proxy(), file=self.csv)
         ctx.parse()
         ctx.write_to_omero()
 
-        cfg = os.path.join(
+        self.cfg = os.path.join(
             os.path.dirname(__file__), 'bulk_to_map_annotation_context.yml')
+
         # Get file annotations
         anns = self.get_screen_annotations()
         # Only expect a single annotation which is a 'bulk annotation'
@@ -159,7 +140,7 @@ class TestMapr(IMaprTest):
         fileid = table_file_ann.file.id.val
 
         ctx = BulkToMapAnnotationContext(
-            self.client, self.screen.proxy(), fileid=fileid, cfg=cfg)
+            self.client, self.screen.proxy(), fileid=fileid, cfg=self.cfg)
         ctx.parse()
         ctx.write_to_omero()
 

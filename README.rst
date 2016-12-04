@@ -1,6 +1,9 @@
 .. image:: https://travis-ci.org/ome/omero-mapr.svg?branch=master
     :target: https://travis-ci.org/ome/omero-mapr
 
+.. image:: https://gitlab.com/aleksandra-tarkowska/mapr/badges/master/build.svg
+    :target: https://gitlab.com/aleksandra-tarkowska/mapr/commits/master
+
 .. image:: https://badge.fury.io/py/omero-mapr.svg
     :target: https://badge.fury.io/py/omero-mapr
 

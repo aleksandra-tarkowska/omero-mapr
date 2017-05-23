@@ -170,6 +170,7 @@ def index(request, menu, conn=None, url=None, **kwargs):
     try:
         value = get_unicode_or_default(request, 'value', None)
         query = get_bool_or_default(request, 'query', False)
+        mfilter = get_unicode_or_default(request, 'filter', None)
         if _get_case_sensitive(mapr_settings, menu):
             case_sensitive = get_bool_or_default(
                 request, 'case_sensitive', False)
@@ -191,7 +192,7 @@ def index(request, menu, conn=None, url=None, **kwargs):
         'case_sensitive': _get_case_sensitive(mapr_settings, menu)}
     context['map_ctx'] = \
         {'label': menu, 'value': value or "", 'query': query or "",
-         'case_sensitive': case_sensitive or ""}
+         'case_sensitive': case_sensitive or "", 'filter': mfilter}
     context['template'] = "mapr/base_mapr.html"
 
     return context
@@ -261,6 +262,7 @@ def api_experimenter_list(request, menu, conn=None, **kwargs):
                 request, 'case_sensitive', False)
         else:
             case_sensitive = False
+        map_filter = get_unicode_or_default(request, 'filter', None)
     except ValueError:
         return HttpResponseBadRequest('Invalid parameter value')
 
@@ -289,7 +291,9 @@ def api_experimenter_list(request, menu, conn=None, **kwargs):
                 mapann_ns=mapann_ns,
                 mapann_names=mapann_names,
                 group_id=group_id,
-                experimenter_id=experimenter_id)
+                experimenter_id=experimenter_id,
+                **{'map_filter': map_filter}
+                )
 
             if experimenter['childCount'] > 0 and mapann_value:
                 experimenter['extra']['value'] = mapann_value
@@ -325,6 +329,7 @@ def api_mapannotation_list(request, menu, conn=None, **kwargs):
         else:
             case_sensitive = False
         orphaned = get_bool_or_default(request, 'orphaned', False)
+        map_filter = get_unicode_or_default(request, 'filter', None)
     except ValueError:
         logger.error(traceback.format_exc())
         return HttpResponseBadRequest('Invalid parameter value')
@@ -347,7 +352,9 @@ def api_mapannotation_list(request, menu, conn=None, **kwargs):
                     group_id=group_id,
                     experimenter_id=experimenter_id,
                     page=page,
-                    limit=limit)
+                    limit=limit,
+                    **{'map_filter': map_filter}
+                    )
             else:
                 screens = mapr_tree.marshal_screens(
                     conn=conn,
@@ -358,7 +365,9 @@ def api_mapannotation_list(request, menu, conn=None, **kwargs):
                     group_id=group_id,
                     experimenter_id=experimenter_id,
                     page=page,
-                    limit=limit)
+                    limit=limit,
+                    **{'map_filter': map_filter}
+                    )
                 projects = mapr_tree.marshal_projects(
                     conn=conn,
                     mapann_value=mapann_value,
@@ -368,7 +377,9 @@ def api_mapannotation_list(request, menu, conn=None, **kwargs):
                     group_id=group_id,
                     experimenter_id=experimenter_id,
                     page=page,
-                    limit=limit)
+                    limit=limit,
+                    **{'map_filter': map_filter}
+                    )
 
     except ApiUsageException as e:
         return HttpResponseBadRequest(e.serverStackTrace)

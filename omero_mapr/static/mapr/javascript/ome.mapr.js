@@ -36,6 +36,9 @@ $(function () {
         if (MAPANNOTATIONS.CTX.value.length > 0) {
             payload['value'] = MAPANNOTATIONS.CTX.value;
         }
+        if (MAPANNOTATIONS.CTX.filter) {
+            payload['filter'] = MAPANNOTATIONS.CTX.filter;
+        }
         // case sensitive results in a JSTree
         //if (MAPANNOTATIONS.CTX.case_sensitive.length > 0) {
         //    payload['case_sensitive'] = MAPANNOTATIONS.CTX.case_sensitive;

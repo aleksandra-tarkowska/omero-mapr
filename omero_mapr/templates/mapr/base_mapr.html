@@ -120,6 +120,9 @@
         } else {
             $('#id_case_sensitive').prop('checked', false);
         }
+        if (MAPANNOTATIONS.CTX.filter) {
+            payload['filter'] = MAPANNOTATIONS.CTX.filter;
+        }
 
         $("#dataTree").data('payload', payload);
 

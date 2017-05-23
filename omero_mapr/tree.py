@@ -35,6 +35,7 @@ from omeroweb.webclient.tree import _marshal_plate
 from omeroweb.webclient.tree import _marshal_image
 from omeroweb.webclient.tree import _marshal_annotation, _marshal_exp_obj
 
+from mapr_filter import MapFilter
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ def _escape_chars_like(query):
 def _set_parameters(mapann_ns=[], mapann_names=[],
                     mapann_value=None, query=False, case_sensitive=True,
                     params=None, experimenter_id=-1,
-                    page=None, limit=settings.PAGE):
+                    page=None, limit=settings.PAGE, **kwargs):
 
     ''' Helper to map ParametersI
 
@@ -115,6 +116,20 @@ def _set_parameters(mapann_ns=[], mapann_names=[],
     else:
         where_clause.append("mv.value != '' ")
 
+    try:
+        mf = kwargs['map_filter']
+        for f in MapFilter(mf)._initially_select:
+            obj = "%s.%s" % (f['object'], f['key'])
+            obj_val = "%s_%s" % (f['object'], f['key'])
+            where_clause.append("{obj} = (:{val})".format(
+                obj=obj, val=obj_val))
+            if isinstance(f['value'], (int, long)):
+                params.addLong(obj_val, long(f['value']))
+            else:
+                params.addString(obj_val, long(f['value']))
+    except KeyError:
+        pass
+
     return params, where_clause
 
 
@@ -155,7 +170,7 @@ def _marshal_map(conn, row):
 def count_mapannotations(conn, mapann_value, query=False,
                          case_sensitive=False,
                          mapann_ns=[], mapann_names=[],
-                         group_id=-1, experimenter_id=-1):
+                         group_id=-1, experimenter_id=-1, **kwargs):
     ''' Count mapannotiation values
 
         @param conn OMERO gateway.
@@ -181,7 +196,7 @@ def count_mapannotations(conn, mapann_value, query=False,
         query=query, mapann_value=mapann_value,
         case_sensitive=case_sensitive,
         params=None, experimenter_id=experimenter_id,
-        page=None, limit=None)
+        page=None, limit=None, **kwargs)
 
     service_opts = deepcopy(conn.SERVICE_OPTS)
 
@@ -198,12 +213,28 @@ def count_mapannotations(conn, mapann_value, query=False,
         from ImageAnnotationLink ial join ial.child a join a.mapValue mv
             join ial.parent i
             left outer join i.wellSamples ws
+                left outer join ws.well w
+                left outer join w.plate plate
+                left outer join plate.screenLinks sl
+                left outer join sl.parent screen
             left outer join i.datasetLinks dil
+                left outer join dil.parent dataset
+                left outer join dataset.projectLinks pdl
+                left outer join pdl.parent project
         where %s AND
          (
-             (ws is not null)
+             (dil is null
+                 and dataset is null and pdl is null and project is null
+              and ws is not null
+                  and w is not null and plate is not null
+                  and sl is not null)
              OR
-             (dil is not null)
+             (ws is null
+                 and w is null and plate is null and sl is null
+                 and screen is null
+              and dil is not null
+                 and dataset is not null and pdl is not null
+                 and project is not null)
          )
         """ % (" and ".join(where_clause))
 
@@ -216,7 +247,7 @@ def marshal_mapannotations(conn, mapann_value, query=False,
                            case_sensitive=False,
                            mapann_ns=[], mapann_names=[],
                            group_id=-1, experimenter_id=-1,
-                           page=1, limit=settings.PAGE):
+                           page=1, limit=settings.PAGE, **kwargs):
     ''' Marshals mapannotation values
 
         @param conn OMERO gateway.
@@ -250,7 +281,7 @@ def marshal_mapannotations(conn, mapann_value, query=False,
         mapann_value=mapann_value, query=query,
         case_sensitive=case_sensitive,
         params=None, experimenter_id=experimenter_id,
-        page=page, limit=limit)
+        page=page, limit=limit, **kwargs)
 
     service_opts = deepcopy(conn.SERVICE_OPTS)
 
@@ -265,29 +296,33 @@ def marshal_mapannotations(conn, mapann_value, query=False,
         select
             mv.value as value,
             count(distinct i.id) as imgCount,
-            count(distinct sl.parent.id) as childCount1,
-            count(distinct pdl.parent.id) as childCount2
+            count(distinct screen.id) as childCount1,
+            count(distinct project.id) as childCount2
         from ImageAnnotationLink ial join ial.child a join a.mapValue mv
             join ial.parent i
             left outer join i.wellSamples ws
                 left outer join ws.well w
-                left outer join w.plate pl
-                left outer join pl.screenLinks sl
+                left outer join w.plate plate
+                left outer join plate.screenLinks sl
+                left outer join sl.parent screen
             left outer join i.datasetLinks dil
-                left outer join dil.parent ds
-                left outer join ds.projectLinks pdl
+                left outer join dil.parent dataset
+                left outer join dataset.projectLinks pdl
+                left outer join pdl.parent project
         where %s AND
          (
              (dil is null
-                 and ds is null and pdl is null
+                 and dataset is null and pdl is null and project is null
               and ws is not null
-                  and w is not null and pl is not null
+                  and w is not null and plate is not null
                   and sl is not null)
              OR
              (ws is null
-                 and w is null and pl is null and sl is null
+                 and w is null and plate is null and sl is null
+                 and screen is null
               and dil is not null
-                 and ds is not null and pdl is not null)
+                 and dataset is not null and pdl is not null
+                 and project is not null)
          )
         group by mv.value
         order by count(distinct i.id) DESC
@@ -315,7 +350,7 @@ def marshal_mapannotations(conn, mapann_value, query=False,
 def marshal_screens(conn, mapann_value, query=False,
                     mapann_ns=[], mapann_names=[],
                     group_id=-1, experimenter_id=-1,
-                    page=1, limit=settings.PAGE):
+                    page=1, limit=settings.PAGE, **kwargs):
 
     ''' Marshals screens
 
@@ -349,7 +384,7 @@ def marshal_screens(conn, mapann_value, query=False,
         mapann_ns=mapann_ns, mapann_names=mapann_names,
         query=query, mapann_value=mapann_value,
         params=None, experimenter_id=experimenter_id,
-        page=page, limit=limit)
+        page=page, limit=limit, **kwargs)
 
     service_opts = deepcopy(conn.SERVICE_OPTS)
 
@@ -406,7 +441,7 @@ def marshal_screens(conn, mapann_value, query=False,
 def marshal_projects(conn, mapann_value, query=False,
                      mapann_ns=[], mapann_names=[],
                      group_id=-1, experimenter_id=-1,
-                     page=1, limit=settings.PAGE):
+                     page=1, limit=settings.PAGE, **kwargs):
 
     ''' Marshals projects
 
@@ -440,7 +475,7 @@ def marshal_projects(conn, mapann_value, query=False,
         mapann_ns=mapann_ns, mapann_names=mapann_names,
         query=query, mapann_value=mapann_value,
         params=None, experimenter_id=experimenter_id,
-        page=page, limit=limit)
+        page=page, limit=limit, **kwargs)
 
     service_opts = deepcopy(conn.SERVICE_OPTS)
 
